@@ -1,21 +1,24 @@
 from flask import Flask
 from flask import request, escape
+from flask import send_file
 import csv
 
 app = Flask(__name__)
 
-@app.route("/",methods=['GET','POST'])
+@app.route("/raw",methods=['GET','POST'])
 def index():
-    if request.method=='GET':
-        return """<h1>BILAG Testing App</h1><h2>made by EB and JH</h2></br>
+    txt = """<h1>BILAG Testing App</h1><h2>made by EB and JH</h2></br>
                 **Instructions**</br> 
-                1. Fill out BILAG_template.csv and save. </br>
+                1. Fill out <a href=/download>BILAG_template.csv</a> and save. </br>
                 2. Open BILAG_template.csv in notepad. </br>
-                3. Copy and paste to the text box below and click submit! </br> </br> </br>
-                <form action=""method="post">
+                3. Copy and paste to the text box below and click submit! </br> 
+                (Click <a href=/>HERE</a> to submit in file) </br> </br> </br>
+                <form action="/raw"method="post">
                 <textarea id="input_text" name="input_text"></textarea></br>
                 <input type="submit" value="Submit">
                 </form>"""
+    if request.method=='GET':
+        return txt
     elif request.method =='POST':
         input_text = request.form['input_text']
         # print(input_text)
@@ -29,17 +32,81 @@ def index():
                 output_text = "Invalid input. Follow the instructions and try again."
         else:
             output_text = ""
-        return """<h1>BILAG Testing App</h1><h2>made by EB and JH</h2></br>
-                **Instructions**</br> 
-                1. Fill out BILAG_template.csv and save. </br>
-                2. Open BILAG_template.csv in notepad. </br>
-                3. Copy and paste to the text box below and click submit! </br> </br> </br>
-                <form action=""method="post">
-                <textarea id="input_text" name="input_text"></textarea></br>
-                <input type="submit" value="Submit">
-                </form>"""+output_text
+        return txt+output_text
 
 # <input type="text" name="input_text">
+
+# https://niceman.tistory.com/150 참고
+@app.route("/",methods=['GET','POST'])
+def uploadfile():
+    txt = """<h1>BILAG Testing App</h1><h2>made by EB and JH</h2></br>
+                **Instructions**</br> 
+                1. Fill out <a href=/download>BILAG_template.csv</a> and save. </br>
+                2. Upload the saved file and click submit! </br>
+                (Click <a href=/raw>HERE</a> to submit in text) </br> </br> </br>
+                <form action="" method="post" enctype="multipart/form-data">
+                <input type = "file" name = "file"/>
+                <input type="submit" value="Submit"/>
+                </form>"""
+    if request.method == 'GET':
+        return txt
+    elif request.method == 'POST':
+        f = request.files['file']
+        input_text=f.read().decode("utf-8-sig")
+        print(input_text)
+        f.close()
+        # print(input_text)
+        if input_text:
+            bilag_cat_out = bilag_categorize(input_text)
+            # print("BILAGCATOUT",bilag_cat_out)
+            if bilag_cat_out:
+                [constitutional, mucocutaneous, neuropsychiatric, musculoskeletal, cardiorespiratory, gastrointestinal, ophthalmic, renal, hem] = bilag_cat_out
+                output_text = "constitutional: "+constitutional+"</br>"+"mucocutaneous: "+mucocutaneous+"</br>"+"neuropsychiatric: "+neuropsychiatric+"</br>"+"musculoskeletal: "+musculoskeletal+"</br>"+"cardiorespiratory: "+cardiorespiratory+"</br>"+"gastrointestinal: "+gastrointestinal+"</br>"+"ophthalmic: "+ophthalmic+"</br>"+"renal: "+renal+"</br>"+"hem: "+hem
+            else:
+                output_text = "Invalid input. Follow the instructions and try again."
+        else:
+            output_text = ""
+        return txt+output_text
+
+@app.route("/form",methods=['GET','POST'])
+def form():
+    txt = """<h1>BILAG Testing App</h1><h2>made by EB and JH</h2></br>
+                **Instructions**</br> 
+                1. Fill out the form below. </br>
+                2. Click submit! </br> </br>
+                * Record</br>
+                0: not present</br>
+                1: improving </br>
+                2: same </br>
+                3: worse </br>
+                4: new </br> </br> </br>
+                <form action=""method="post">
+                <textarea id="" name="input_text"></textarea></br>
+                <input type="submit" value="Submit">
+                </form>"""
+    if request.method=='GET':
+        return txt
+    elif request.method =='POST':
+        input_text = request.form['input_text']
+        # print(input_text)
+        if input_text:
+            bilag_cat_out = bilag_categorize(input_text)
+            # print("BILAGCATOUT",bilag_cat_out)
+            if bilag_cat_out:
+                [constitutional, mucocutaneous, neuropsychiatric, musculoskeletal, cardiorespiratory, gastrointestinal, ophthalmic, renal, hem] = bilag_cat_out
+                output_text = "constitutional: "+constitutional+"</br>"+"mucocutaneous: "+mucocutaneous+"</br>"+"neuropsychiatric: "+neuropsychiatric+"</br>"+"musculoskeletal: "+musculoskeletal+"</br>"+"cardiorespiratory: "+cardiorespiratory+"</br>"+"gastrointestinal: "+gastrointestinal+"</br>"+"ophthalmic: "+ophthalmic+"</br>"+"renal: "+renal+"</br>"+"hem: "+hem
+            else:
+                output_text = "Invalid input. Follow the instructions and try again."
+        else:
+            output_text = ""
+        return txt+output_text
+
+@app.route("/download",methods=['GET'])
+def download():
+    return send_file('BILAG_template.csv',
+                     mimetype='text/csv',
+                     attachment_filename='BILAG_template.csv',
+                     as_attachment=True)
 
 def bilag_categorize(input_text):
     try:
